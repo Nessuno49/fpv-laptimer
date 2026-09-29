@@ -1,0 +1,13 @@
+[Unit]
+Description=Lap timer: switch on the hotspot at boot when no cable is plugged in
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+# NetworkManager needs a few seconds after starting until the cable is detected
+ExecStartPre=/bin/sleep 10
+ExecStart=/usr/local/bin/laptimer-hotspot
+
+[Install]
+WantedBy=multi-user.target

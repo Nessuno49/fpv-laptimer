@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Laptimer</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- Texts: English here, translated by i18n.js (data-i18n = key in TEXTS) -->
+<header>
+  <button class="title" data-goto="welcome" data-i18n-title="nav_welcome">🏁 Laptimer</button>
+  <nav>
+    <button data-tab="race" data-i18n="nav_race">Race</button>
+    <button data-tab="stats" data-i18n="nav_stats">Statistics</button>
+    <button data-tab="history" class="admin-only" data-i18n="nav_history">History</button>
+    <button data-tab="pilots" class="admin-only" data-i18n="nav_pilots">Pilots &amp; Tracks</button>
+    <button data-tab="camera" class="admin-only" data-i18n="nav_camera">Camera</button>
+  </nav>
+  <div id="gear-box">
+    <button id="gear" data-i18n-title="nav_settings">
+      <!-- icon "settings" from Lucide (lucide.dev, ISC license) -->
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+    </button>
+    <!-- spectators: the gear opens this menu instead of the settings tab -->
+    <div id="sm-menu" class="card" hidden>
+      <label class="check"><input type="checkbox" class="callouts-toggle"> <span data-i18n="callouts_on">🔊 Callouts</span></label>
+      <div class="field"><span data-i18n="callouts_for">Callouts for</span><div class="callout-filter"></div></div>
+      <label><span data-i18n="language">🌐 Language</span> <select id="sm-language"></select></label>
+      <button id="sm-sign-out" data-i18n="sign_out">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- ======================================================== welcome / quick tutorial -->
+  <section id="tab-welcome" class="tab" hidden>
+    <div class="card welcome">
+      <h2>🏁 Laptimer</h2>
+      <p data-i18n-html="welcome_intro"></p>
+    </div>
+    <div class="card admin-only">
+      <h3 data-i18n="quick_start">Quick start</h3>
+      <ol class="steps">
+        <li><div data-i18n-html="step_camera"></div><button class="mini" data-goto="camera" data-i18n="go_camera"></button></li>
+        <li><div data-i18n-html="step_pilots"></div><button class="mini" data-goto="pilots" data-i18n="go_pilots"></button></li>
+        <li><div data-i18n-html="step_learn"></div><button class="mini" data-goto="race" data-i18n="go_race"></button></li>
+        <li><div data-i18n-html="step_race"></div><button class="mini" data-goto="race" data-i18n="go_race"></button></li>
+        <li><div data-i18n-html="step_history"></div><button class="mini" data-goto="history" data-i18n="go_history"></button></li>
+      </ol>
+    </div>
+    <div class="card admin-only">
+      <h3 data-i18n="tips">Tips</h3>
+      <ul class="tips">
+        <li data-i18n-html="tip_zone"></li>
+        <li data-i18n-html="tip_callouts"></li>
+        <li data-i18n-html="tip_spectators"></li>
+        <li data-i18n-html="tip_relearn"></li>
+      </ul>
+    </div>
+    <div class="card spectator-only">
+      <h3 data-i18n="for_spectators">Welcome, spectator!</h3>
+      <div class="welcome-me">
+        <p data-i18n-html="welcome_me_q"></p>
+        <button id="welcome-me" class="primary"></button>
+      </div>
+      <ol class="steps">
+        <li><div data-i18n-html="spec_step_callouts"></div></li>
+        <li><div data-i18n-html="spec_step_pilot"></div></li>
+        <li><div data-i18n-html="spec_step_follow"></div></li>
+      </ol>
+    </div>
+    <button class="primary big" data-goto="race" data-i18n="to_race">Let's go → Race</button>
+  </section>
+
+  <!-- ======================================================== race -->
+  <section id="tab-race" class="tab">
+    <div id="status" class="status" data-i18n="status_ready">READY</div>
+
+    <!-- ready: put a race together -->
+    <div class="card admin-only" id="setup">
+      <div class="columns">
+        <div>
+          <h3 data-i18n="new_race">New race</h3>
+          <label><span data-i18n="format">Format</span> <button type="button" class="info" data-tip="tip_format">ⓘ</button> <select id="s-format"></select></label>
+          <div id="s-parameters"></div>
+          <label><span data-i18n="track">Track</span> <button type="button" class="info" data-tip="tip_track">ⓘ</button> <select id="s-track"></select></label>
+          <label id="s-staging-row"><span data-i18n="staging">⏳ Staging</span> <button type="button" class="info" data-tip="tip_staging">ⓘ</button> <select id="s-staging"></select></label>
+        </div>
+        <div>
+          <h3 data-i18n="participants">Participants</h3>
+          <div id="s-participants"></div>
+          <button id="s-add" class="wide" data-i18n="add_participant">+ Participant</button>
+        </div>
+      </div>
+      <button id="start" class="primary big" data-i18n="start">▶ Start</button>
+      <p class="muted small" data-i18n="practice_hint">Practice: no countdown, no end, not saved.</p>
+    </div>
+
+    <!-- running -->
+    <div class="columns" id="live" hidden>
+      <div class="card" id="display">
+        <div id="big-label" class="muted"></div>
+        <div id="big">–</div>
+        <div class="figures" id="figures">
+          <div><span class="muted" data-i18n="last_lap">Last lap</span><b id="f-last">–</b></div>
+          <div><span class="muted" data-i18n="best_lap">Best lap</span><b id="f-best">–</b></div>
+          <div><span class="muted" id="f-progress-label" data-i18n="laps">Laps</span><b id="f-progress">0</b></div>
+        </div>
+      </div>
+      <div>
+        <div class="card" id="controls">
+          <h3 id="ctl-category"></h3>
+          <p class="muted" id="ctl-info"></p>
+          <div class="button-row admin-only">
+            <button id="skip-staging" class="primary" data-i18n="skip_staging">⏩ Start now</button>
+            <button id="finish" data-i18n="finish_save">■ Finish &amp; save</button>
+            <button id="abort" class="danger" data-i18n="abort">✕ Abort</button>
+            <button id="end-practice" class="primary" data-i18n="end_practice">■ End practice</button>
+          </div>
+        </div>
+        <div class="card" id="result" hidden>
+          <h3><span data-i18n="result">Result</span> · <span id="r-category"></span></h3>
+          <table class="table result-table"><tbody id="r-list"></tbody></table>
+          <div class="button-row admin-only">
+            <button id="ok" class="primary">OK</button>
+            <button id="again" data-i18n="again">↻ Again</button>
+          </div>
+        </div>
+        <div class="card" id="last-card" hidden>
+          <h3><span data-i18n="last_crossing">Last crossing</span> <button type="button" class="info" data-tip="tip_last_crossing">ⓘ</button></h3>
+          <div class="last">
+            <img id="last-photo" class="photo-medium" alt="">
+            <div><b id="last-pilot"></b><div id="last-info" class="muted small"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card warning admin-only" id="unassigned-card" hidden>
+      <h3><span data-i18n="unassigned_title">❓ Unassigned</span> (<span id="unassigned-count">0</span>) <button type="button" class="info" data-tip="tip_unassigned">ⓘ</button></h3>
+      <div id="unassigned-list" class="unassigned-list"></div>
+    </div>
+
+    <div class="card" id="monitor-card" hidden>
+      <h3 data-i18n="lap_monitor">Lap monitor</h3>
+      <table class="table monitor">
+        <thead><tr><th>#</th><th data-i18n="pilot">Pilot</th><th data-i18n="lap">Lap</th><th data-i18n="col_last">Last</th>
+          <th data-i18n="col_best">Best</th><th><span data-i18n="col_gap">Gap</span> <button type="button" class="info" data-tip="tip_gap">ⓘ</button></th></tr></thead>
+        <tbody id="monitor"></tbody>
+      </table>
+      <p class="muted small" data-i18n="monitor_hint">Tap a row to see the pilot's laps.</p>
+    </div>
+
+    <div class="card" id="laps-card" hidden>
+      <h3 id="laps-title" data-i18n="laps">Laps</h3>
+      <div id="lap-box">
+        <table class="lap-table">
+          <thead><tr><th><span data-i18n="lap">Lap</span> <button type="button" class="info" data-tip="tip_holeshot">ⓘ</button></th><th data-i18n="col_time">Time</th>
+            <th class="col-total" data-i18n="col_total">Total</th></tr></thead>
+          <tbody id="laps"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================== statistics -->
+  <section id="tab-stats" class="tab" hidden>
+    <div class="card filter">
+      <label><span data-i18n="track">Track</span> <select id="st-track"></select></label>
+      <label><span data-i18n="quad">Quad</span> <select id="st-quad"></select></label>
+    </div>
+    <div class="columns">
+      <div class="card">
+        <h3 data-i18n="leaderboard">Leaderboard</h3>
+        <label><span data-i18n="category">Category</span> <button type="button" class="info" data-tip="tip_category">ⓘ</button> <select id="st-cat"></select></label>
+        <table class="table"><thead><tr><th>#</th><th data-i18n="pilot">Pilot</th><th data-i18n="col_value">Value</th>
+          <th data-i18n="col_date">Date</th></tr></thead>
+          <tbody id="st-leaderboard"></tbody></table>
+      </div>
+      <div class="card">
+        <h3 data-i18n="pilot">Pilot</h3>
+        <label><span data-i18n="pilot">Pilot</span> <select id="st-pilot"></select></label>
+        <table class="table"><thead><tr><th data-i18n="category">Category</th><th data-i18n="col_best_value">Best</th>
+          <th data-i18n="col_rank">Rank</th></tr></thead>
+          <tbody id="st-records"></tbody></table>
+        <h3><span data-i18n="progress">Progress</span> <button type="button" class="info" data-tip="chart_hint">ⓘ</button></h3>
+        <label><span data-i18n="category">Category</span> <select id="st-pcat"></select></label>
+        <div id="st-chart"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================== race history -->
+  <section id="tab-history" class="tab" hidden>
+    <div class="columns">
+      <div class="card">
+        <div class="filter">
+          <label><span data-i18n="pilot">Pilot</span> <select id="h-pilot"></select></label>
+          <label><span data-i18n="track">Track</span> <select id="h-track"></select></label>
+        </div>
+        <ul id="h-list" class="list"></ul>
+      </div>
+      <div class="card" id="h-detail"><p class="muted" data-i18n="history_pick"></p></div>
+    </div>
+  </section>
+
+  <!-- ======================================================== settings -->
+  <section id="tab-settings" class="tab" hidden>
+    <div class="card" id="role-card">
+      <h3 data-i18n="race_director">🔑 Race director</h3>
+      <div id="role-spectator">
+        <p class="muted small" data-i18n="spectator_text"></p>
+        <form id="role-sign-in" class="row">
+          <input id="role-pin" type="password" inputmode="numeric" autocomplete="off" data-i18n-placeholder="pin" maxlength="8">
+          <button class="primary" data-i18n="sign_in">Sign in</button>
+        </form>
+      </div>
+      <div id="role-admin">
+        <p class="muted small" data-i18n="admin_text"></p>
+        <form id="role-pin-form" class="row">
+          <input id="role-new-pin" type="password" inputmode="numeric" autocomplete="new-password"
+                 data-i18n-placeholder="new_pin_placeholder" maxlength="8">
+          <button class="primary" data-i18n="change_pin">Change PIN</button>
+        </form>
+      </div>
+      <div class="button-row"><button id="role-sign-out" data-i18n="sign_out">Sign out</button></div>
+    </div>
+    <div class="card">
+      <label><span data-i18n="language">🌐 Language</span> <select id="language"></select></label>
+    </div>
+    <div class="card admin-only">
+      <h3 data-i18n="race_settings">Race</h3>
+      <label class="slider"><span><span data-i18n="min_lap">Minimum lap time</span> <button type="button" class="info" data-tip="min_lap_hint">ⓘ</button></span>
+        <input type="range" id="set-min-lap" min="1" max="15" step="0.5"><span id="set-min-lap-v"></span></label>
+      <label class="slider"><span><span data-i18n="keep_photos">Keep photos</span> <button type="button" class="info" data-tip="keep_photos_hint">ⓘ</button></span>
+        <input type="range" id="set-photos" min="1" max="24" step="1"><span id="set-photos-v"></span></label>
+    </div>
+    <div class="card">
+      <h3><span data-i18n="sound_voice">Sound &amp; voice</span> <span class="muted small" data-i18n="this_device_only"></span></h3>
+      <div class="columns">
+        <div>
+          <label class="check"><input type="checkbox" class="callouts-toggle"> <span data-i18n="callouts_on">🔊 Callouts</span></label>
+          <label class="check"><input type="checkbox" id="snd-sounds"> <span data-i18n="sound_effects">Sound effects</span></label>
+          <label class="check"><input type="checkbox" id="snd-speech"> <span data-i18n="speech">Speech</span></label>
+          <label><span data-i18n="voice">Voice</span> <select id="snd-voice"></select></label>
+          <label id="snd-speaker-row" hidden><span data-i18n="speaker">Speaker</span> <select id="snd-speaker"></select></label>
+          <p id="snd-voice-status" class="muted small"></p>
+          <label class="slider"><span data-i18n="rate">Speed</span><input type="range" id="snd-rate" min="0.7" max="1.6" step="0.05"><span id="snd-rate-v"></span></label>
+          <label class="slider"><span data-i18n="volume">Volume</span><input type="range" id="snd-volume" min="0" max="1" step="0.05"><span id="snd-volume-v"></span></label>
+          <div class="field"><span data-i18n="callouts_for">Callouts for</span><div class="callout-filter"></div></div>
+          <button id="snd-voice-test" data-i18n="test_voice">🗣 Test voice</button>
+        </div>
+        <div class="admin-only">
+          <div class="field"><span data-i18n="sounds_all_devices">Sounds</span> <button type="button" class="info" data-tip="sound_tiles_hint">ⓘ</button></div>
+          <div id="snd-tests" class="sound-tests"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card admin-only">
+      <h3 data-i18n="hotspot">📶 Hotspot</h3>
+      <p class="muted small" data-i18n="hotspot_hint"></p>
+      <form id="hotspot-form" class="row">
+        <input id="hotspot-password" type="text" autocomplete="off" maxlength="63" data-i18n-placeholder="hotspot_new_password">
+        <button class="primary" data-i18n="change_password">Change password</button>
+      </form>
+    </div>
+    <div class="card admin-only">
+      <h3 data-i18n="power">Switch off the Pi</h3>
+      <p class="muted small" data-i18n="power_hint"></p>
+      <div class="button-row">
+        <button id="sys-off" class="danger" data-i18n="shutdown">⏻ Shut down Pi</button>
+        <button id="sys-reboot" data-i18n="reboot">↻ Restart Pi</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================== pilots & tracks -->
+  <section id="tab-pilots" class="tab" hidden>
+    <label class="small"><input type="checkbox" id="m-archived"> <span data-i18n="show_archived">Show archived</span></label>
+    <div class="columns">
+      <div class="card">
+        <h3><span data-i18n="pilots_quads">Pilots &amp; quads</span> <button type="button" class="info" data-tip="tip_profile">ⓘ</button></h3>
+        <form id="m-pilot-form" class="row">
+          <input id="m-pilot-name" data-i18n-placeholder="pilot_name" maxlength="40">
+          <button class="primary" data-i18n="add">Add</button>
+        </form>
+        <ul id="m-pilots" class="list"></ul>
+      </div>
+      <div class="card">
+        <h3><span data-i18n="tracks">Tracks</span> <button type="button" class="info" data-tip="tip_tracks">ⓘ</button></h3>
+        <form id="m-track-form">
+          <input id="m-track-name" data-i18n-placeholder="track_name" maxlength="60">
+          <input id="m-track-description" data-i18n-placeholder="description_placeholder" maxlength="200">
+          <button class="primary" data-i18n="add">Add</button>
+        </form>
+        <ul id="m-tracks" class="list"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================== camera -->
+  <section id="tab-camera" class="tab" hidden>
+    <div class="columns">
+      <div class="card">
+        <h3><span data-i18n="live_image">Live image</span> <span id="cam-info" class="muted"></span> <button type="button" class="info" data-tip="tip_cam_info">ⓘ</button></h3>
+        <div id="image-box">
+          <img id="image" data-i18n-title="camera_image" alt="" draggable="false">
+          <div id="rubber-band"></div>
+        </div>
+        <p class="muted small" data-i18n="zone_hint"></p>
+      </div>
+      <div class="card">
+        <h3 data-i18n="fine_tuning">Fine tuning</h3>
+        <p class="muted small"><span data-i18n="change_in_zone">Change in the zone</span> <button type="button" class="info" data-tip="tip_bar">ⓘ</button></p>
+        <div id="bar"><div id="bar-value"></div></div>
+        <div id="sliders"></div>
+        <div id="cam-calibrate-box" hidden>
+          <div class="button-row">
+            <button id="cam-calibrate" class="primary" data-i18n="calibrate_camera">📷 Calibrate camera</button>
+            <button id="cam-rotate" data-i18n-title="rotate_title"><span data-i18n="rotate_image">↻ Rotate image</span>
+              <span id="cam-rotation"></span></button>
+            <button type="button" class="info" data-tip="calibrate_hint">ⓘ</button>
+          </div>
+          <p id="cam-actual" class="muted small"></p>
+        </div>
+        <h3><span data-i18n="camera_presets">Camera presets</span> <button type="button" class="info" data-tip="presets_hint">ⓘ</button></h3>
+        <div class="row">
+          <select id="cp-list"></select>
+          <button id="cp-load" data-i18n="load">Load</button>
+          <button id="cp-delete" class="danger" data-i18n-title="delete_preset">🗑</button>
+        </div>
+        <form id="cp-form" class="row">
+          <input id="cp-name" data-i18n-placeholder="preset_name" maxlength="40">
+          <button class="primary" data-i18n="save_current">💾 Save current</button>
+        </form>
+      </div>
+    </div>
+    <div class="card">
+      <h3 data-i18n="recent_crossings">Recent crossings</h3>
+      <div id="cam-recent" class="photo-strip"></div>
+    </div>
+  </section>
+</main>
+
+<div id="lightbox" hidden><img alt=""></div>
+<div id="pin-dialog" hidden>
+  <form class="card dialog-window" id="pin-form">
+    <h3 data-i18n="pin_title">Race director PIN</h3>
+    <p id="pin-text"></p>
+    <input id="pin-input" type="password" inputmode="numeric" autocomplete="off" data-i18n-placeholder="pin_placeholder" maxlength="8">
+    <div class="button-row">
+      <button class="danger" id="pin-ok" data-i18n="delete_for_good">Delete for good</button>
+      <button type="button" id="pin-cancel" data-i18n="cancel">Cancel</button>
+    </div>
+  </form>
+</div>
+<div id="login-page" hidden>
+  <div class="card login-window">
+    <h2>🏁 Laptimer</h2>
+    <button id="login-spectator" class="primary big" data-i18n="continue_spectator">👀 Continue as spectator</button>
+    <p class="muted small" data-i18n="spectator_login_hint"></p>
+    <h3 data-i18n="race_director">🔑 Race director</h3>
+    <form id="login-form" class="row">
+      <input id="login-pin" type="password" inputmode="numeric" autocomplete="current-password" data-i18n-placeholder="pin" maxlength="8">
+      <button data-i18n="sign_in">Sign in</button>
+    </form>
+    <p id="login-hint" class="muted small" hidden data-i18n-html="no_pin_hint"></p>
+    <p id="login-error" class="login-error small"></p>
+    <label class="login-language"><span data-i18n="language">🌐 Language</span> <select id="login-language"></select></label>
+  </div>
+</div>
+<div id="me-dialog" hidden>
+  <div class="card dialog-window">
+    <h3 data-i18n="who_are_you">Who are you?</h3>
+    <p class="muted small" data-i18n="who_hint"></p>
+    <div id="me-current"></div>
+    <input id="me-search" type="search" autocomplete="off" data-i18n-placeholder="search_pilot">
+    <div id="me-results" class="me-buttons"></div>
+    <div class="button-row"><button id="me-cancel" data-i18n="cancel">Cancel</button></div>
+  </div>
+</div>
+<div id="system-notice" hidden>
+  <div class="card dialog-window">
+    <h3 id="sys-title"></h3>
+    <p id="sys-text"></p>
+  </div>
+</div>
+<div id="sound-dialog" hidden>
+  <div class="card dialog-window">
+    <h3 id="sd-title" data-i18n="sound_title">Sound</h3>
+    <ul id="sd-list" class="list"></ul>
+    <div class="button-row">
+      <button id="sd-upload" class="primary" data-i18n="upload_file">⬆ Upload file</button>
+      <button id="sd-close" data-i18n="close">Close</button>
+    </div>
+    <input type="file" id="sd-file" accept=".mp3,.wav,.ogg,audio/*" hidden>
+    <p id="sd-status" class="muted small"></p>
+    <p class="muted small" data-i18n="upload_hint"></p>
+  </div>
+</div>
+<div id="message" hidden></div>
+<script src="i18n.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

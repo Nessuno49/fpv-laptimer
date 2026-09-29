@@ -1,0 +1,21 @@
+#!/usr/sbin/nft -f
+# Lap timer hotspot: requests from the phones to port 80 (no matter which address) end up at the lap timer.
+# This makes "Sign in to network" work (see laptimer-dns.conf).
+# Loaded when the hotspot starts (90-laptimer-hotspot). Installed as /etc/laptimer-portal.nft
+
+# Remove the old version first, so the file can be loaded any number of times
+table ip laptimer_portal
+delete table ip laptimer_portal
+
+table ip laptimer_portal {
+	chain redirect {
+		type nat hook prerouting priority dstnat; policy accept;
+		# web requests from the hotspot to other addresses -> lap timer (port 80)
+		iifname "wlan0" ip daddr != 10.42.0.1 tcp dport 80 dnat to 10.42.0.1:80
+	}
+	chain reject_https {
+		type filter hook forward priority filter; policy accept;
+		# reject encrypted requests at once, so the phones don't wait long
+		iifname "wlan0" tcp dport 443 reject with tcp reset
+	}
+}

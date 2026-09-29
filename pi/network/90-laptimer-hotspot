@@ -1,0 +1,8 @@
+#!/bin/bash
+# NetworkManager calls this on every network change: $1 = interface, $2 = event.
+case "$1:$2" in
+    # cable plugged in or pulled -> hotspot off or on
+    eth0:up|eth0:down) /usr/local/bin/laptimer-hotspot & ;;
+    # hotspot is on -> load the redirect for the sign-in page
+    wlan0:up) nft -f /etc/laptimer-portal.nft ;;
+esac

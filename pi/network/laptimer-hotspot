@@ -1,0 +1,28 @@
+#!/bin/bash
+# Lap timer: cable in  -> hotspot off (the Pi is in the home network)
+#            cable out -> hotspot "Laptimer" on (phones connect directly to the Pi)
+#
+# Called by NetworkManager when something changes at the cable
+# (/etc/NetworkManager/dispatcher.d/90-laptimer-hotspot), and once at boot
+# (laptimer-hotspot.service). Installed as /usr/local/bin/laptimer-hotspot.
+
+HOTSPOT="Laptimer-Hotspot"   # name of the connection in NetworkManager
+CABLE="eth0"
+
+sleep 3   # wait a moment: when plugging in, the connector often still wobbles
+
+hotspot_running() {
+    nmcli -t -f NAME connection show --active | grep -qx "$HOTSPOT"
+}
+
+if [ "$(cat /sys/class/net/$CABLE/carrier 2>/dev/null)" = "1" ]; then
+    if hotspot_running; then
+        logger -t laptimer-hotspot "Cable plugged in - hotspot off"
+        nmcli connection down "$HOTSPOT"
+    fi
+else
+    if ! hotspot_running; then
+        logger -t laptimer-hotspot "No cable - hotspot on"
+        nmcli connection up "$HOTSPOT"
+    fi
+fi

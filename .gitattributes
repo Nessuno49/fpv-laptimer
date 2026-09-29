@@ -1,0 +1,3 @@
+# Unix line endings everywhere – the scripts and services run on the Pi
+* text=auto eol=lf
+*.onnx binary
